@@ -3,7 +3,7 @@
 >이 플러그인은 명령어로 실행됩니다.
 
 ## 사용 방법
-> 명령어:
+명령어:
 ```/startbattle <farmtime> <bordercenter>```
 
 
