@@ -4,7 +4,9 @@
 
 ## 사용 방법
 명령어:
-```/startbattle <farmtime> <bordercenter>```
+```
+/startbattle <farmtime> <bordercenter>
+```
 
 
 >`<farmtime>` : 게임 시작 전 아이템 파밍 시간
