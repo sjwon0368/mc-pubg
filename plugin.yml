@@ -1,0 +1,8 @@
+name: Battlegrounds
+version: 1.0
+main: io.codejava.mc.pubg.Battlegrounds
+api-version: 1.21
+commands:
+  startbattle:
+    usage: /startbattle <farmtime> <bordercenter>
+    description: Starts a battle game similar to PUBG.
