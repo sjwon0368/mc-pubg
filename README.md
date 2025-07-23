@@ -1,7 +1,9 @@
 # 마인크래프트 플러그인
 >[!TIP]
 >이 플러그인은 명령어로 작동합니다.
+>
 >Prefix: `/startbattle <farmtime> <bordercenter>`
+>
 >`<farmtime>` : 게임 시작 전 아이템 파밍 시간
 >`<bordercenter>` : 게임 시작 시 월드보더 생성 기준 좌표(파밍시간 포함)
 >`<bordercenter>` 매개변수 기본값: 좌표 `0, 0, 0` (`0` 또는 미입력시)
