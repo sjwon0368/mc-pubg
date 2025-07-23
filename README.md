@@ -5,12 +5,16 @@
 >Prefix: `/startbattle <farmtime> <bordercenter>`
 >
 >`<farmtime>` : 게임 시작 전 아이템 파밍 시간
+>
 >`<bordercenter>` : 게임 시작 시 월드보더 생성 기준 좌표(파밍시간 포함)
+>
 >`<bordercenter>` 매개변수 기본값: 좌표 `0, 0, 0` (`0` 또는 미입력시)
 
 ## 추가 정보
 > 버전: `v1.0`
+> 
 > 커밋 ID: `(없음)`
+> 
 > 빌드 날짜: `(없음)`
 
 > 이 플러그인은 GPL-3.0 라이선스에 의해 보호됩니다.
