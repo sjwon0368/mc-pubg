@@ -24,7 +24,7 @@ jobs:
       - name: Download dependencies
         run: |
           mkdir -p lib
-          wget -O lib/paper-api.jar https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/1.20.6-R0.1-SNAPSHOT/paper-api-1.20.6-R0.1-20240531.093857-1.jar
+          wget -O lib/paper-api.jar https://repo.papermc.io/repository/maven-snapshots/io/papermc/paper/paper-api/1.21.5-R0.1-SNAPSHOT/paper-api-1.21.5-R0.1-20250618.110345-23.jar
           wget -O lib/adventure-platform-bukkit.jar https://repo1.maven.org/maven2/net/kyori/adventure-platform-bukkit/4.3.1/adventure-platform-bukkit-4.3.1.jar
           wget -O lib/adventure-text-serializer-legacy.jar https://repo1.maven.org/maven2/net/kyori/adventure-text-serializer-legacy/4.13.1/adventure-text-serializer-legacy-4.13.1.jar
           wget -O lib/jetbrains-annotations.jar https://repo1.maven.org/maven2/org/jetbrains/annotations/24.1.0/annotations-24.1.0.jar
