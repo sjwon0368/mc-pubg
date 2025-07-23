@@ -24,7 +24,8 @@ jobs:
       - name: Download PaperMC API
         run: |
           mkdir -p lib
-          curl -L -o lib/paper-api.jar https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/1.21.0-R0.1-SNAPSHOT/paper-api-1.21.0-R0.1-20240609.093857-1.jar
+          curl -L -o lib/paper-api.jar https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/1.20.6-R0.1-SNAPSHOT/paper-api-1.20.6-R0.1-20240531.093857-1.jar
+          file lib/paper-api.jar | grep 'Zip archive data' || (echo "Download failed or not a jar"; exit 1)
 
       - name: Compile plugin
         run: |
@@ -44,4 +45,5 @@ jobs:
         with:
           name: Battlegrounds
           path: jar/Battlegrounds.jar
+
 
