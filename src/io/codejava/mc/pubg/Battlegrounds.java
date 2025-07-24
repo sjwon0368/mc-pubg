@@ -19,12 +19,6 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.Location;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.Sound;
-import org.bukkit.GameMode;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -32,6 +26,13 @@ import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.Sound;
+import org.bukkit.GameMode;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.Location;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -55,12 +56,21 @@ public class Battlegrounds extends JavaPlugin implements Listener {
     private WorldBorder activeBorder;
     private Player winner;
 
+    private boolean keepInventory = true;
+    private Set<String> blockedResourcePacks = Set.of(
+        "xray", "x-ray", "xray.zip", "x-ray.zip", "Xray_Ultimate"
+    );
+
     @Override
     public void onEnable() {
         // Register the command executor for "startbattle"
         this.getCommand("startbattle").setExecutor(new StartBattleCommand());
         // Register event listeners
         Bukkit.getPluginManager().registerEvents(this, this);
+        // Set keepInventory true at startup
+        for (World w : Bukkit.getWorlds()) {
+            w.setGameRuleValue("keepInventory", "true");
+        }
     }
 
     // Prevent entering Nether/End
@@ -96,9 +106,35 @@ public class Battlegrounds extends JavaPlugin implements Listener {
         if (farmBar != null) farmBar.addPlayer(event.getPlayer());
     }
 
+    // Disallow xray resource packs
+    @EventHandler
+    public void onResourcePack(PlayerResourcePackStatusEvent event) {
+        String url = event.getResourcePackUrl();
+        if (url != null) {
+            String lowerUrl = url.toLowerCase();
+            boolean blocked = false;
+            for (String blockedName : blockedResourcePacks) {
+                if (lowerUrl.contains(blockedName.toLowerCase()) || url.contains("Xray")) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked) {
+                String playerName = event.getPlayer().getName();
+                event.getPlayer().kickPlayer(ChatColor.RED + "Xray 리소스팩은 사용할 수 없습니다.");
+                Bukkit.broadcastMessage(ChatColor.RED + playerName + "이(가) Xray 리소스팩을 사용하여 게임에서 추방당했습니다.");
+                return;
+            }
+        }
+    }
+
+    // Allow respawn during farming time
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         if (farmBar != null) farmBar.addPlayer(event.getPlayer());
+        if (keepInventory) {
+            event.getPlayer().setGameMode(GameMode.SURVIVAL);
+        }
     }
 
     @EventHandler
@@ -116,7 +152,9 @@ public class Battlegrounds extends JavaPlugin implements Listener {
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
         if (gameActive) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "게임 중에는 명령어를 사용할 수 없습니다.");
+            event.getPlayer().sendMessage(ChatColor.RED + "게임 중에는 명령어를 사용할 수 없습니다."); // Also send chat messages visible to everyone
+            // saying: "<commandattempteduser>이(가) 명령어 사용을 시도하였습니다." and this too?
+            Bukkit.broadcastMessage(ChatColor.RED + event.getPlayer().getName() + "이(가) 명령어 사용을 시도하였습니다.");
         }
     }
 
@@ -124,13 +162,22 @@ public class Battlegrounds extends JavaPlugin implements Listener {
     public void onPlayerGameModeChange(PlayerGameModeChangeEvent event) {
         if (gameActive && event.getNewGameMode() != GameMode.SPECTATOR) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(ChatColor.RED + "게임 중에는 게임모드를 변경할 수 없습니다.");
+            event.getPlayer().sendMessage(ChatColor.RED + "게임 중에는 게임모드를 변경할 수 없습니다."); // Also send chat messages visible to everyone
+            // saying: "<gamemodechangeattempteduser>이(가) 게임모드 변경을 시도하였습니다." can add this?
+            Bukkit.broadcastMessage(ChatColor.RED + event.getPlayer().getName() + "이(가) 게임모드 변경을 시도하였습니다.");
         }
     }
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (!gameActive && keepInventory) {
+            event.setKeepInventory(true);
+            event.setKeepLevel(true);
+            return;
+        }
         if (!gameActive) return;
+        event.setKeepInventory(false);
+        event.setKeepLevel(false);
         Player dead = event.getEntity();
         Player killer = dead.getKiller();
         alivePlayers--;
@@ -181,13 +228,13 @@ public class Battlegrounds extends JavaPlugin implements Listener {
     private void showWinner() {
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.sendTitle("", ChatColor.GOLD + "" + ChatColor.BOLD + "WINNER WINNER CHICKEN DINNER", 0, 60, 10);
-            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 1.0f, 1.0f); // successful hit
         }
         Bukkit.getScheduler().runTaskLater(this, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (winner != null) {
                     p.sendTitle("", ChatColor.YELLOW + "" + ChatColor.BOLD + winner.getName() + "!", 0, 60, 10);
-                    p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+                    p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f); // XP level up
                 }
             }
             // Send game result chat message
@@ -204,6 +251,11 @@ public class Battlegrounds extends JavaPlugin implements Listener {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 p.sendActionBar(""); // Clear action bar
             }
+            // Restore keepInventory for farming
+            for (World w : Bukkit.getWorlds()) {
+                w.setGameRuleValue("keepInventory", "true");
+            }
+            keepInventory = true;
         }, 60L); // 3 seconds after subtitle
     }
 
@@ -222,7 +274,7 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                 try {
                     farmMinutes = Math.max(1, Integer.parseInt(args[0]));
                 } catch (NumberFormatException e) {
-                    sender.sendMessage(ChatColor.RED + "파밍 시간은 숫자로 입력하세요.");
+                    sender.sendMessage(ChatColor.RED + "파밍 시간은 숫자로 입력하세요."); // this farming time is in minutes right?
                     return true;
                 }
             }
@@ -244,6 +296,7 @@ public class Battlegrounds extends JavaPlugin implements Listener {
             for (Player p : world.getPlayers()) {
                 p.getInventory().clear();
                 p.teleport(new Location(world, 0, 100, 0));
+                p.setGameMode(GameMode.SURVIVAL);
                 p.sendTitle(ChatColor.BOLD + "" + ChatColor.WHITE + "파밍 시간이 시작되었습니다: " + farmMinutes + "분", "", 10, 60, 10);
             }
 
@@ -306,7 +359,7 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                         frozenPlayers.add(p);
                         p.setWalkSpeed(0f);
                         p.setFlySpeed(0f);
-                        p.setGameMode(GameMode.ADVENTURE);
+                        p.setGameMode(GameMode.SURVIVAL);
                         p.sendTitle(ChatColor.BOLD + "" + ChatColor.WHITE + "게임이 잠시 후 시작됩니다", ChatColor.BOLD + "" + ChatColor.WHITE + "시작까지 15초", 10, 60, 10);
                     }
                     countdownTask = new BukkitRunnable() {
@@ -362,6 +415,12 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                     }
                     updateAliveHotbar();
 
+                    // Disable keepInventory for battle
+                    for (World w : Bukkit.getWorlds()) {
+                        w.setGameRuleValue("keepInventory", "false");
+                    }
+                    keepInventory = false;
+
                     // Setup storm boss bar
                     if (stormBar != null) stormBar.removeAll();
                     stormBar = Bukkit.createBossBar("", BarColor.RED, BarStyle.SOLID);
@@ -369,11 +428,11 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                         if (p.getGameMode() != GameMode.SPECTATOR) stormBar.addPlayer(p);
                     }
 
-                    // Shrink world border over 90 seconds to 5x5
+                    // Shrink world border smoothly over 50 seconds to 5x5
                     activeBorder = world.getWorldBorder();
                     double initialSize = 2000;
                     double finalSize = 5;
-                    int shrinkSeconds = 90;
+                    int shrinkSeconds = 50;
                     long shrinkStart = System.currentTimeMillis();
                     long shrinkEnd = shrinkStart + shrinkSeconds * 1000L;
 
@@ -392,7 +451,7 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                             }
                             double leftSec = leftMillis / 1000.0;
                             int seconds = (int)leftSec;
-                            stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소까지 " + seconds + "초 [!]");
+                            stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소 중 [!]");
                             stormBar.setProgress(leftSec / shrinkSeconds);
                             // Shrink border smoothly
                             double newSize = initialSize - ((initialSize - finalSize) * (1 - leftSec / shrinkSeconds));
