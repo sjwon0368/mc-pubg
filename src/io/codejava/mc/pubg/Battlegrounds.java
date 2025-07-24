@@ -405,34 +405,75 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                         if (p.getGameMode() != GameMode.SPECTATOR) stormBar.addPlayer(p);
                     }
 
-                    // Shrink world border smoothly over 50 seconds to 5x5
+                    // Storm shrink in 6 stages with pauses
                     activeBorder = world.getWorldBorder();
-                    double initialSize = 2000;
-                    double finalSize = 5;
-                    int shrinkSeconds = 50;
-                    long shrinkStart = System.currentTimeMillis();
-                    long shrinkEnd = shrinkStart + shrinkSeconds * 1000L;
+                    double[] borderSizes = {2000, 1000, 500, 200, 50, 20, 5}; // 6 stages, 7 sizes
+                    int shrinkStages = borderSizes.length - 1;
+                    int shrinkSeconds = 70; // 70s per shrink
+                    int pauseSeconds = 70;  // 70s pause after each shrink
 
                     if (stormTask != null) stormTask.cancel();
                     stormTask = new BukkitRunnable() {
+                        int stage = 0;
+                        boolean shrinking = true;
+                        long phaseStart = System.currentTimeMillis();
+                        long phaseEnd = phaseStart + shrinkSeconds * 1000L;
+
                         @Override
                         public void run() {
-                            long now = System.currentTimeMillis();
-                            long leftMillis = shrinkEnd - now;
-                            if (leftMillis <= 0) {
-                                activeBorder.setSize(finalSize);
-                                stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소까지 0초 [!]");
+                            if (stage >= shrinkStages) {
+                                activeBorder.setSize(borderSizes[shrinkStages]);
+                                stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소 완료 [!]");
                                 stormBar.setProgress(0);
                                 this.cancel();
                                 return;
                             }
-                            double leftSec = leftMillis / 1000.0;
-                            int seconds = (int)leftSec;
-                            stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소 중 [!]");
-                            stormBar.setProgress(leftSec / shrinkSeconds);
-                            // Shrink border smoothly
-                            double newSize = initialSize - ((initialSize - finalSize) * (1 - leftSec / shrinkSeconds));
-                            activeBorder.setSize(newSize);
+                            long now = System.currentTimeMillis();
+                            if (shrinking) {
+                                long leftMillis = phaseEnd - now;
+                                if (leftMillis <= 0) {
+                                    // Finish this shrink, start pause
+                                    activeBorder.setSize(borderSizes[stage + 1]);
+                                    shrinking = false;
+                                    phaseStart = System.currentTimeMillis();
+                                    phaseEnd = phaseStart + pauseSeconds * 1000L;
+                                    stormBar.setTitle(ChatColor.YELLOW + "" + ChatColor.BOLD + "[!] 자기장 멈춤 (" + borderSizes[stage + 1] + "x" + borderSizes[stage + 1] + ") [!]");
+                                    stormBar.setProgress(1.0);
+                                    return;
+                                }
+                                double leftSec = leftMillis / 1000.0;
+                                double totalSec = shrinkSeconds;
+                                double progress = leftSec / totalSec;
+                                double from = borderSizes[stage];
+                                double to = borderSizes[stage + 1];
+                                double newSize = from - ((from - to) * (1 - progress));
+                                activeBorder.setSize(newSize);
+                                stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소 중 (" + (stage + 1) + "/" + shrinkStages + ") [!]");
+                                stormBar.setProgress(progress);
+                            } else {
+                                long leftMillis = phaseEnd - now;
+                                if (leftMillis <= 0) {
+                                    // Pause done, start next shrink
+                                    stage++;
+                                    if (stage >= shrinkStages) {
+                                        activeBorder.setSize(borderSizes[shrinkStages]);
+                                        stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소 완료 [!]");
+                                        stormBar.setProgress(0);
+                                        this.cancel();
+                                        return;
+                                    }
+                                    shrinking = true;
+                                    phaseStart = System.currentTimeMillis();
+                                    phaseEnd = phaseStart + shrinkSeconds * 1000L;
+                                    stormBar.setTitle(ChatColor.RED + "" + ChatColor.BOLD + "[!] 자기장 축소 중 (" + (stage + 1) + "/" + shrinkStages + ") [!]");
+                                    stormBar.setProgress(1.0);
+                                } else {
+                                    double leftSec = leftMillis / 1000.0;
+                                    double progress = leftSec / pauseSeconds;
+                                    stormBar.setTitle(ChatColor.YELLOW + "" + ChatColor.BOLD + "[!] 자기장 멈춤 (" + borderSizes[stage] + "x" + borderSizes[stage] + ") [!]");
+                                    stormBar.setProgress(progress);
+                                }
+                            }
                         }
                     };
                     stormTask.runTaskTimer(Battlegrounds.this, 0L, 2L); // update every 2 ticks
