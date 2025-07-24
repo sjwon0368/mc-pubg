@@ -26,7 +26,6 @@ import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.Sound;
@@ -104,28 +103,6 @@ public class Battlegrounds extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (farmBar != null) farmBar.addPlayer(event.getPlayer());
-    }
-
-    // Disallow xray resource packs
-    @EventHandler
-    public void onResourcePack(PlayerResourcePackStatusEvent event) {
-        String url = event.getResourcePackUrl();
-        if (url != null) {
-            String lowerUrl = url.toLowerCase();
-            boolean blocked = false;
-            for (String blockedName : blockedResourcePacks) {
-                if (lowerUrl.contains(blockedName.toLowerCase()) || url.contains("Xray")) {
-                    blocked = true;
-                    break;
-                }
-            }
-            if (blocked) {
-                String playerName = event.getPlayer().getName();
-                event.getPlayer().kickPlayer(ChatColor.RED + "Xray 리소스팩은 사용할 수 없습니다.");
-                Bukkit.broadcastMessage(ChatColor.RED + playerName + "이(가) Xray 리소스팩을 사용하여 게임에서 추방당했습니다.");
-                return;
-            }
-        }
     }
 
     // Allow respawn during farming time
@@ -466,4 +443,3 @@ public class Battlegrounds extends JavaPlugin implements Listener {
         }
     }
 }
-
