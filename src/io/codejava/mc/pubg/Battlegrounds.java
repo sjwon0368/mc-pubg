@@ -328,10 +328,15 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                         // Teleport to random position above ground
                         double x = random.nextInt(2000) - 1000;
                         double z = random.nextInt(2000) - 1000;
-                        double y = 100;
+                        // Find highest safe Y at (x, z)
+                        int y = world.getHighestBlockYAt((int)x, (int)z) + 1;
                         p.teleport(new Location(world, x, y, z));
-                        // Give slow falling effect for 30 seconds
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 20 * 30, 1, false, false, false));
+                        // Give resistance for 5 seconds to prevent damage
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 20 * 5, 10, false, false, false));
+                        // Optionally, give glowing for 3 seconds
+                        // p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20 * 3, 0, false, false, false));
+                        // Optionally, give slow falling for 5 seconds for a soft drop
+                        //p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 20 * 5, 1, false, false, false));
                         // Freeze player
                         frozenPlayers.add(p);
                         p.setWalkSpeed(0f);
