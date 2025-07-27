@@ -332,7 +332,7 @@ public class Battlegrounds extends JavaPlugin implements Listener {
                         int y = world.getHighestBlockYAt((int)x, (int)z) + 1;
                         p.teleport(new Location(world, x, y, z));
                         // Give resistance for 5 seconds to prevent damage
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 20 * 5, 10, false, false, false));
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 20 * 5, 10, false, false, false));
                         // Optionally, give glowing for 3 seconds
                         // p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20 * 3, 0, false, false, false));
                         // Optionally, give slow falling for 5 seconds for a soft drop
